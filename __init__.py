@@ -1,9 +1,11 @@
 if "bpy" in locals():
     import importlib
     importlib.reload(operators)
+    importlib.reload(ui)
 else:
     import bpy
     from . import operators
+    from . import ui
 
 bl_info = {
     'name': 'Test',
@@ -15,7 +17,8 @@ bl_info = {
     'category': 'Object'
 }
 classes = [
-    operators.NODE_OP_CheckNodes
+    operators.NODE_OP_CheckNodes,
+    ui.VIEW3D_PT_NodeTestPanel
 ]
 
 
