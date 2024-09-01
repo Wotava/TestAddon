@@ -46,6 +46,31 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
 
         return nodes
 
+    def add_attribute(self, node):
+        tree = node.id_data
+        counter = 0
+        for n_input in node.inputs:
+            if len(n_input.links) > 0:
+                continue
+
+            attrib_node = tree.nodes.new('ShaderNodeAttribute')
+            attrib_node.location = node.location
+            attrib_node.location.x -= node.width / 2
+            attrib_node.location.x -= attrib_node.width / 2
+            attrib_node.location.y -= 45 * counter
+            counter += 1
+
+            attrib_node.attribute_name = n_input.name
+
+            if n_input.type == 'VECTOR':
+                n_output = attrib_node.outputs['Vector']
+            elif n_input == 'VALUE':
+                n_output = attrib_node.outputs['Fac']
+            else:
+                n_output = attrib_node.outputs['Color']
+            tree.links.new(n_output, n_input)
+            attrib_node.hide = True
+
     def execute(self, context):
         disconnected_groups = []
         all_disconnected_nodes = []
@@ -66,6 +91,9 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                 print(f"\nMaterial \"{mat.name}\" disconnected nodes: ")
                 for node in disconnected_nodes:
                     print(f"->{node.name} (type: {node.type})")
+
+                    self.add_attribute(node)
+
                     if node.type == 'GROUP' and node.node_tree not in disconnected_groups:
                         disconnected_groups.append(node.node_tree)
                 all_disconnected_nodes.extend(disconnected_nodes)
