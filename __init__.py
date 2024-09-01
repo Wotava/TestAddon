@@ -1,8 +1,9 @@
 if "bpy" in locals():
     import importlib
-
+    importlib.reload(operators)
 else:
     import bpy
+    from . import operators
 
 bl_info = {
     'name': 'Test',
@@ -14,7 +15,7 @@ bl_info = {
     'category': 'Object'
 }
 classes = [
-
+    operators.NODE_OP_CheckNodes
 ]
 
 
