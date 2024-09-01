@@ -48,6 +48,7 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
 
     def execute(self, context):
         disconnected_groups = []
+        all_disconnected_nodes = []
 
         for mat in bpy.data.materials:
             if not mat.use_nodes:
@@ -62,12 +63,15 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
             all_nodes = set(self.get_all_nodetree_nodes(mat.node_tree, extend_groups=False))
             disconnected_nodes = all_nodes.difference(set(connected_nodes))
             if len(disconnected_nodes) > 0:
-                print(f"\nMat {mat.name} disconnected nodes: ")
+                print(f"\nMaterial \"{mat.name}\" disconnected nodes: ")
                 for node in disconnected_nodes:
-                    print(f"{node.name} (type: {node.type})")
+                    print(f"->{node.name} (type: {node.type})")
                     if node.type == 'GROUP' and node.node_tree not in disconnected_groups:
                         disconnected_groups.append(node.node_tree)
+                all_disconnected_nodes.extend(disconnected_nodes)
 
+        if len(all_disconnected_nodes) == 0:
+            print(f"No disconnected shader nodes")
 
         for group in disconnected_groups:
             print(f"\nDisconnected group {group.name} used in: ")
@@ -75,13 +79,23 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                 if not mat.use_nodes:
                     continue
                 if self.find_group_usages(group, mat.node_tree):
-                    print(mat.name)
+                    print(f"->{mat.name}")
 
+        if len(disconnected_groups) == 0:
+            print(f"No disconnected Node Groups")
+
+        broken_groups = []
         for group in bpy.data.node_groups:
             if group.type == 'SHADER':
+                if group.users == 0:
+                    print(f"{group.name} is unused")
+                    continue
+
                 root = self.find_root(group, 'GROUP_OUTPUT')
                 if not root:
+                    print(f"{group.name} has no valid output node")
                     continue
+
                 connected_nodes = set(self.parse_linked_input_nodes(root))
                 all_nodes = set(self.get_all_nodetree_nodes(group, extend_groups=False))
                 delta = all_nodes.difference(connected_nodes)
@@ -89,8 +103,13 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                 if len(delta) == 0:
                     continue
 
-                print(f"\n{group.name} unused nodes: ")
+                print(f"\n{group.name} has unused nodes: ")
                 for node in delta:
-                    print(f"{node.name} (type: {node.type})")
+                    print(f"->{node.name} (type: {node.type})")
+
+                broken_groups.append(group)
+
+        if len(broken_groups) == 0:
+            print(f"No disconnected shader nodes in Node Groups")
 
         return {'FINISHED'}
