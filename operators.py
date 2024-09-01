@@ -71,6 +71,30 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
             tree.links.new(n_output, n_input)
             attrib_node.hide = True
 
+    def get_bbox(self, nodes: list):
+        bbox_min, bbox_max = None, None
+
+        for node in nodes:
+            lt_corner = node.location.copy()
+            lt_corner.x -= node.width / 2
+            lt_corner.y -= node.height / 2
+
+            rt_corner = node.location.copy()
+            rt_corner.x += node.width / 2
+            rt_corner.y += node.height / 2
+
+            if not bbox_max:
+                bbox_max = lt_corner
+                bbox_min = rt_corner
+            else:
+                bbox_max = max(bbox_max, lt_corner)
+                bbox_min = max(bbox_min, rt_corner)
+
+        height = abs(bbox_max.y - bbox_min.y)
+        width = abs(bbox_max.x - bbox_min.x)
+        center = (bbox_max + bbox_min) / 2
+        return width, height, center
+
     def execute(self, context):
         disconnected_groups = []
         all_disconnected_nodes = []
