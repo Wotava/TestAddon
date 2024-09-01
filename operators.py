@@ -1,6 +1,7 @@
 import bpy
 
-max_frame_width = 5000
+max_frame_width = 1000
+frame_internal_offset = 100
 
 
 class NODE_OP_CheckNodes(bpy.types.Operator):
@@ -51,9 +52,11 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
     def add_attribute(self, node) -> []:
         nodes = [node]
         tree = node.id_data
+        if not tree:
+            raise Exception
 
         for n_input in node.inputs:
-            if len(n_input.links) > 0:
+            if len(n_input.links) > 0 or n_input.is_unavailable:
                 continue
 
             attrib_node = tree.nodes.new('ShaderNodeAttribute')
@@ -106,7 +109,7 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
         all_disconnected_nodes = []
 
         for mat in bpy.data.materials:
-            if not mat.use_nodes:
+            if not mat.use_nodes or mat.node_tree is None:
                 continue
 
             mat_root = self.find_root(mat.node_tree, 'OUTPUT_MATERIAL')
@@ -130,8 +133,10 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                 frame_node.location = connected_location.copy()
                 frame_node.location.y += connected_height
 
-                print(f"\nMaterial \"{mat.name}\" disconnected nodes: ")
                 for node in disconnected_nodes:
+                    if node.type == 'FRAME':
+                        continue
+
                     group = self.add_attribute(node)
                     group_width, group_height, group_location = self.get_bbox(group)
                     row_max_height = max(row_max_height, group_height)
@@ -146,12 +151,14 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                     loc.y += connected_height + row_height_offset + group_height / 2
                     loc.x += (max_frame_width - row_width) + group_width / 2
                     offset = loc - group_location
+
                     for sub_node in group:
                         sub_node.location += offset
                         sub_node.parent = frame_node
+
                     row_width -= group_width
 
-                    print(f"->{node.name} (type: {node.type})")
+                    print(f"\"{mat.name}\": {node.name} (type: {node.type})")
                     if node.type == 'GROUP' and node.node_tree not in disconnected_groups:
                         disconnected_groups.append(node.node_tree)
                 all_disconnected_nodes.extend(disconnected_nodes)
