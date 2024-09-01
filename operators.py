@@ -83,18 +83,18 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
         for node in nodes:
             lt_corner = node.location.copy()
             lt_corner.x -= node.width / 2
-            lt_corner.y -= node.height / 2
+            lt_corner.y += node.height / 2
 
-            rt_corner = node.location.copy()
-            rt_corner.x += node.width / 2
-            rt_corner.y += node.height / 2
+            rb_corner = node.location.copy()
+            rb_corner.x += node.width / 2
+            rb_corner.y -= node.height / 2
 
             if not bbox_max:
                 bbox_max = lt_corner
-                bbox_min = rt_corner
+                bbox_min = rb_corner
             else:
+                bbox_min = min(bbox_min, rb_corner)
                 bbox_max = max(bbox_max, lt_corner)
-                bbox_min = max(bbox_min, rt_corner)
 
         height = abs(bbox_max.y - bbox_min.y)
         width = abs(bbox_max.x - bbox_min.x)
@@ -128,7 +128,7 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
 
                 frame_node = mat.node_tree.nodes.new('NodeFrame')
                 frame_node.location = connected_location.copy()
-                frame_node.location.y += connected_height * 2
+                frame_node.location.y += connected_height
 
                 print(f"\nMaterial \"{mat.name}\" disconnected nodes: ")
                 for node in disconnected_nodes:
@@ -143,8 +143,8 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                         row_max_height = -1
 
                     loc = connected_location.copy()
-                    loc.y += connected_height + row_height_offset
-                    loc.x += max_frame_width - row_width
+                    loc.y += connected_height + row_height_offset + group_height / 2
+                    loc.x += (max_frame_width - row_width) + group_width / 2
                     offset = loc - group_location
                     for sub_node in group:
                         sub_node.location += offset
