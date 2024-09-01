@@ -46,9 +46,10 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
 
         return nodes
 
-    def add_attribute(self, node):
+    def add_attribute(self, node) -> []:
+        nodes = [node]
         tree = node.id_data
-        counter = 0
+
         for n_input in node.inputs:
             if len(n_input.links) > 0:
                 continue
@@ -57,8 +58,7 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
             attrib_node.location = node.location
             attrib_node.location.x -= node.width / 2
             attrib_node.location.x -= attrib_node.width / 2
-            attrib_node.location.y -= 45 * counter
-            counter += 1
+            attrib_node.location.y -= 45 * len(nodes)
 
             attrib_node.attribute_name = n_input.name
 
@@ -70,6 +70,10 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                 n_output = attrib_node.outputs['Color']
             tree.links.new(n_output, n_input)
             attrib_node.hide = True
+
+            nodes.append(attrib_node)
+
+        return nodes
 
     def get_bbox(self, nodes: list):
         bbox_min, bbox_max = None, None
