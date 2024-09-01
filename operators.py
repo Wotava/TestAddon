@@ -96,8 +96,10 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                 bbox_max = lt_corner
                 bbox_min = rb_corner
             else:
-                bbox_min = min(bbox_min, rb_corner)
-                bbox_max = max(bbox_max, lt_corner)
+                bbox_min.x = min(bbox_min.x, rb_corner.x)
+                bbox_min.y = min(bbox_min.y, rb_corner.y)
+                bbox_max.x = max(bbox_max.x, lt_corner.x)
+                bbox_max.x = max(bbox_max.y, lt_corner.y)
 
         height = abs(bbox_max.y - bbox_min.y)
         width = abs(bbox_max.x - bbox_min.x)
