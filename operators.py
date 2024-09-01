@@ -1,5 +1,7 @@
 import bpy
 
+max_frame_width = 5000
+
 
 class NODE_OP_CheckNodes(bpy.types.Operator):
     """"""
@@ -113,15 +115,43 @@ class NODE_OP_CheckNodes(bpy.types.Operator):
                 continue
 
             connected_nodes = self.parse_linked_input_nodes(mat_root)
+            connected_width, connected_height, connected_location = self.get_bbox(connected_nodes)
+
             all_nodes = set(self.get_all_nodetree_nodes(mat.node_tree, extend_groups=False))
             disconnected_nodes = all_nodes.difference(set(connected_nodes))
+
             if len(disconnected_nodes) > 0:
+                row_max_height = -1
+                row_count = 0
+                row_height_offset = 0
+                row_width = max_frame_width
+
+                frame_node = mat.node_tree.nodes.new('NodeFrame')
+                frame_node.location = connected_location.copy()
+                frame_node.location.y += connected_height * 2
+
                 print(f"\nMaterial \"{mat.name}\" disconnected nodes: ")
                 for node in disconnected_nodes:
+                    group = self.add_attribute(node)
+                    group_width, group_height, group_location = self.get_bbox(group)
+                    row_max_height = max(row_max_height, group_height)
+
+                    if group_width > row_width:
+                        row_count += 1
+                        row_width = max_frame_width
+                        row_height_offset += row_max_height
+                        row_max_height = -1
+
+                    loc = connected_location.copy()
+                    loc.y += connected_height + row_height_offset
+                    loc.x += max_frame_width - row_width
+                    offset = loc - group_location
+                    for sub_node in group:
+                        sub_node.location += offset
+                        sub_node.parent = frame_node
+                    row_width -= group_width
+
                     print(f"->{node.name} (type: {node.type})")
-
-                    self.add_attribute(node)
-
                     if node.type == 'GROUP' and node.node_tree not in disconnected_groups:
                         disconnected_groups.append(node.node_tree)
                 all_disconnected_nodes.extend(disconnected_nodes)
